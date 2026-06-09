@@ -122,7 +122,7 @@ func getVideoDuration(ctx context.Context, videoPath string) (float64, error) {
 	if strings.HasSuffix(strings.ToLower(videoPath), ".webm") {
 		fixedPath := videoPath + ".fixed.webm"
 		if err := fixWebMFile(ctx, videoPath, fixedPath); err == nil {
-			defer os.Remove(fixedPath)
+			defer func() { _ = os.Remove(fixedPath) }()
 			videoPath = fixedPath
 		}
 	}

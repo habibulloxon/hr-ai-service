@@ -163,7 +163,7 @@ func TestTranscribe_Final(t *testing.T) {
 	_ = mw.WriteField("allFeedbacks", "feedback one; feedback two")
 	_ = mw.WriteField("jobData", `{"title":"Engineer"}`)
 	_ = mw.WriteField("language", "en-US")
-	mw.Close()
+	_ = mw.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/transcribe", &buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
@@ -203,7 +203,7 @@ func TestTranscribe_Video(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, _ = fw.Write([]byte("fake video bytes"))
-	mw.Close()
+	_ = mw.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/transcribe", &buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())

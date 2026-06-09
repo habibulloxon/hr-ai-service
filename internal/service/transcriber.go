@@ -59,7 +59,7 @@ func (s *GCPTranscriber) Transcribe(ctx context.Context, localFilePath, language
 	if err != nil {
 		return "", fmt.Errorf("create storage client: %w", err)
 	}
-	defer storageClient.Close()
+	defer func() { _ = storageClient.Close() }()
 
 	// Cleanup runs even if the request context is cancelled, so use a detached
 	// context with its own deadline.
@@ -83,7 +83,7 @@ func (s *GCPTranscriber) Transcribe(ctx context.Context, localFilePath, language
 	if err != nil {
 		return "", fmt.Errorf("create speech client: %w", err)
 	}
-	defer speechClient.Close()
+	defer func() { _ = speechClient.Close() }()
 
 	fileURI := fmt.Sprintf("gs://%s/%s%s", s.bucket, audioPrefix, localFilePath)
 	outputURI := fmt.Sprintf("gs://%s/%s", s.bucket, transcriptPrefix)
@@ -164,7 +164,7 @@ func (s *GCPTranscriber) uploadFile(ctx context.Context, client *storage.Client,
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	wc := client.Bucket(s.bucket).Object(objectName).NewWriter(ctx)
 	if _, err := io.Copy(wc, f); err != nil {
@@ -199,7 +199,7 @@ func (s *GCPTranscriber) downloadResults(ctx context.Context, client *storage.Cl
 			continue
 		}
 		data, err := io.ReadAll(reader)
-		reader.Close()
+		_ = reader.Close()
 		if err != nil {
 			s.log.Warn("read transcript data", "object", attrs.Name, "err", err)
 			continue

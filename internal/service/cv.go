@@ -58,7 +58,7 @@ func (c *CVService) FetchAndParse(ctx context.Context, rawURL string) (string, e
 	if err != nil {
 		return "", fmt.Errorf("download cv: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("download cv: status code %d", resp.StatusCode)
@@ -123,8 +123,8 @@ func parsePDF(content []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("create temp file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	defer func() { _ = tmpFile.Close() }()
 
 	if _, err := tmpFile.Write(content); err != nil {
 		return "", fmt.Errorf("write temp file: %w", err)
@@ -134,7 +134,7 @@ func parsePDF(content []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("open PDF: %w", err)
 	}
-	defer doc.Close()
+	defer func() { _ = doc.Close() }()
 
 	var b strings.Builder
 	for i := 0; i < doc.NumPage(); i++ {
@@ -157,8 +157,8 @@ func parseDocx(content []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("create temp file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	defer func() { _ = tmpFile.Close() }()
 
 	if _, err := tmpFile.Write(content); err != nil {
 		return "", fmt.Errorf("write temp file: %w", err)
@@ -168,7 +168,7 @@ func parseDocx(content []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("read DOCX: %w", err)
 	}
-	defer doc.Close()
+	defer func() { _ = doc.Close() }()
 
 	return doc.Editable().GetContent(), nil
 }

@@ -77,14 +77,14 @@ func (h *Handlers) processInterviewVideo(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "failed to get video file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	tmpVideoPath, err := saveTempUpload(file, header.Filename)
 	if err != nil {
 		http.Error(w, "failed to save video file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer os.Remove(tmpVideoPath)
+	defer func() { _ = os.Remove(tmpVideoPath) }()
 
 	ctx, cancel := context.WithTimeout(r.Context(), h.cfg.TranscribeTimeout)
 	defer cancel()
@@ -94,7 +94,7 @@ func (h *Handlers) processInterviewVideo(w http.ResponseWriter, r *http.Request,
 		h.writeMediaError(w, "failed to extract audio", err)
 		return
 	}
-	defer os.Remove(audioPath)
+	defer func() { _ = os.Remove(audioPath) }()
 
 	framePaths, err := h.media.ExtractFrames(ctx, tmpVideoPath, 5)
 	if err != nil {
@@ -122,7 +122,7 @@ func (h *Handlers) processInterviewVideo(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "failed to stage audio file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer os.Remove(localAudioPath)
+	defer func() { _ = os.Remove(localAudioPath) }()
 
 	transcript, err := h.stt.Transcribe(ctx, baseAudioName, language)
 	if err != nil {
@@ -169,10 +169,14 @@ func saveTempUpload(file multipart.File, filename string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
 
 	if _, err := io.Copy(out, file); err != nil {
-		os.Remove(path)
+		_ = out.Close()
+		_ = os.Remove(path)
+		return "", err
+	}
+	if err := out.Close(); err != nil {
+		_ = os.Remove(path)
 		return "", err
 	}
 	return path, nil
@@ -195,20 +199,22 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 
-	_, err = io.Copy(out, in)
-	return err
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 func removeFiles(paths []string) {
 	for _, p := range paths {
-		os.Remove(p)
+		_ = os.Remove(p)
 	}
 }
